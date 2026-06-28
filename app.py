@@ -4,7 +4,7 @@ import streamlit as st
 st.set_page_config(page_title="AlAhram Gate Dashboard", page_icon="assets/logo.png", layout="wide", initial_sidebar_state="collapsed")
 
 from utils.theme import inject_custom_css, render_top_header, get_colors
-from utils.data_loader import load_all_summary
+from utils.data_loader import load_all_summary, load_new_vehicles, load_used_vehicles, load_ev_by_license, pd
 from utils.charts import (
     kpi_card, section_header, gold_divider,
     donut_chart, horizontal_bar, line_chart, treemap_chart, data_table
@@ -26,23 +26,53 @@ with st.expander(":material/tune: Dashboard Settings", expanded=False):
     )
 
 # ── Load aggregate data ─────────────────────────────────────────────────────
-summary = load_all_summary()
+summary = load_all_summary(scope)
 
 
 
-# ── Scope-aware KPIs ─────────────────────────────────────────────────────────
+# ── Scope-aware KPIs & Data Filtering ──────────────────────────────────────────
 if scope == "New Vehicles Only":
     highlight_val = summary.get("total_new", 0)
     highlight_label, highlight_icon = "New Vehicles", "new"
+    
+    # Extract only new vehicle data for charts
+    new_df = load_new_vehicles()
+    fuel_dist = new_df.groupby("Fuel_Type", as_index=False)["Grand Total"].sum() if "Fuel_Type" in new_df.columns else pd.DataFrame()
+    top_brands = new_df.groupby("Brand", as_index=False)["Grand Total"].sum().sort_values("Grand Total", ascending=False).head(10) if "Brand" in new_df.columns else pd.DataFrame()
+    country_dist = new_df.groupby("Country", as_index=False)["Grand Total"].sum() if "Country" in new_df.columns else pd.DataFrame()
+    year_trend = pd.DataFrame() # No year data in new vehicles
+    
 elif scope == "Used Vehicles Only":
     highlight_val = summary.get("total_used", 0)
     highlight_label, highlight_icon = "Used Vehicles", "used"
+    
+    # Extract only used vehicle data for charts
+    used_df = load_used_vehicles()
+    fuel_dist = used_df.groupby("Fuel_Type", as_index=False)["Grand Total"].sum() if "Fuel_Type" in used_df.columns else pd.DataFrame()
+    top_brands = used_df.groupby("Brand", as_index=False)["Grand Total"].sum().sort_values("Grand Total", ascending=False).head(10) if "Brand" in used_df.columns else pd.DataFrame()
+    country_dist = pd.DataFrame() # No country data in used vehicles
+    year_trend = summary.get("year_trend", pd.DataFrame()) # Keep global year trend for used
+
 elif scope == "EVs Only":
     highlight_val = summary.get("total_ev", 0)
     highlight_label, highlight_icon = "Electric Vehicles", "electric"
+    
+    # Extract only EV data for charts
+    ev_df = load_ev_by_license()
+    fuel_dist = ev_df.groupby("Fuel_Type", as_index=False)["Grand Total"].sum() if "Fuel_Type" in ev_df.columns else pd.DataFrame()
+    top_brands = ev_df.groupby("Brand", as_index=False)["Grand Total"].sum().sort_values("Grand Total", ascending=False).head(10) if "Brand" in ev_df.columns else pd.DataFrame()
+    country_dist = ev_df.groupby("Country", as_index=False)["Grand Total"].sum() if "Country" in ev_df.columns else pd.DataFrame()
+    year_trend = pd.DataFrame() # No year data in EVs
+
 else:
     highlight_val = summary.get("total_all", 0)
     highlight_label, highlight_icon = "Total Vehicles", "car"
+    
+    # Default global summary
+    fuel_dist = summary.get("fuel_dist")
+    top_brands = summary.get("top_brands")
+    country_dist = summary.get("country_dist")
+    year_trend = summary.get("year_trend")
 
 k1, k2, k3, k4, k5 = st.columns(5)
 
@@ -60,19 +90,16 @@ with k5:
 # ── Row 1: Fuel Distribution  |  Top Brands ────────────────────────────────
 col_left, col_right = st.columns(2)
 
-fuel_dist = summary.get("fuel_dist")
-top_brands = summary.get("top_brands")
-
 with col_left:
     if fuel_dist is not None and not fuel_dist.empty:
         donut_chart(
             df=fuel_dist,
             names="Fuel_Type",
             values="Grand Total",
-            title="Fuel Type Distribution",
+            title=f"Fuel Type Distribution ({highlight_label})",
         )
     else:
-        st.info("No fuel-type distribution data available.")
+        st.info("No fuel-type distribution data available for this scope.")
 
 with col_right:
     if top_brands is not None and not top_brands.empty:
@@ -80,17 +107,14 @@ with col_right:
             df=top_brands.head(10),
             x="Grand Total",
             y="Brand",
-            title="Top 10 Brands",
+            title=f"Top 10 Brands ({highlight_label})",
             n=10,
         )
     else:
-        st.info("No brand data available.")
+        st.info("No brand data available for this scope.")
 
 # ── Row 2: Country Treemap  |  Year Trend ──────────────────────────────────
 col_left2, col_right2 = st.columns(2)
-
-country_dist = summary.get("country_dist")
-year_trend = summary.get("year_trend")
 
 with col_left2:
     if country_dist is not None and not country_dist.empty:
@@ -98,10 +122,11 @@ with col_left2:
             df=country_dist,
             path=["Country"],
             values="Grand Total",
-            title="Vehicles by Country of Origin",
+            title=f"Registrations by Country of Origin ({highlight_label})",
+            height=450,
         )
     else:
-        st.info("No country distribution data available.")
+        st.info("No country distribution data available for this scope.")
 
 with col_right2:
     if year_trend is not None and not year_trend.empty:
@@ -113,7 +138,7 @@ with col_right2:
             area=True,
         )
     else:
-        st.info("No yearly trend data available.")
+        st.info("No yearly trend data available for this scope.")
 
 # ── Summary data tables ────────────────────────────────────────────────────
 gold_divider()

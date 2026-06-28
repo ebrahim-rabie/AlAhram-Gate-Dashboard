@@ -9,13 +9,13 @@ from pathlib import Path
 
 # ── Data Directory ──────────────────────────────────────────────────────────
 
-DATA_DIR = Path(__file__).parent.parent / "Dataset" / "DATA AFTER FUEL TYPE"
+DATA_DIR = Path(__file__).parent.parent / "Dataset" / "DATA AFTER FUEL TYPE-20260628T042829Z-3-001" / "DATA AFTER FUEL TYPE"
 
 # ── File Paths ──────────────────────────────────────────────────────────────
 
 FILES = {
-    "ev_license": DATA_DIR / "Copy of fuel_after_map_english_إحصائية ماركات المركبات الكهربائية وفقاً لأنواع التراخيص.csv",
-    "new_vehicles": DATA_DIR / "Copy of fuel_after_map_output_english_إحصائية الماركات والطرازات للمركبات الزيرو.csv",
+    "ev_license": DATA_DIR / "Copy of fuel_after_map_english_إحصائية ماركات المركبات الكهربائية وفقاً لأنواع التراخيص.xlsx",
+    "new_vehicles": DATA_DIR / "Copy of fuel_after_map_output_english_إحصائية الماركات والطرازات للمركبات الزيرو.xlsx",
     "new_private": DATA_DIR / "Copy of fuel_after_map_output_english_إحصائية الماركات والطرازات للملاكي الزيرو.xlsx",
     "license_condition_gov": DATA_DIR / "Copy of fuel_after_map_output_english_إحصائية الماركات والطرازات وفقاً لنوع الترخيص وحالة المركبة موزعة على محافظات الجمهورية (2).xlsx",
     "vehicle_condition": DATA_DIR / "Copy of fuel_after_map_output_englishإحصائية الماركات والطرازات وفقاً لحالة المركبة.xlsx",
@@ -106,10 +106,10 @@ def _drop_total_rows(df: pd.DataFrame) -> pd.DataFrame:
 
 # ── Individual Loaders ──────────────────────────────────────────────────────
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_ev_by_license() -> pd.DataFrame:
     """Load electric vehicle brands by license type (File 1)."""
-    df = pd.read_csv(FILES["ev_license"])
+    df = pd.read_excel(FILES["ev_license"])
     df = _clean_columns(df)
     df = _drop_unnamed(df)
     df = _drop_total_rows(df)
@@ -123,7 +123,7 @@ def load_ev_by_license() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_ev_january() -> pd.DataFrame:
     """Load electric vehicle brands for January 2026 (File 8)."""
     df = pd.read_excel(FILES["ev_january"])
@@ -139,10 +139,11 @@ def load_ev_january() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_new_vehicles() -> pd.DataFrame:
     """Load zero/new vehicle brands by location (File 2)."""
-    df = pd.read_csv(FILES["new_vehicles"])
+    # Cache buster comment
+    df = pd.read_excel(FILES["new_vehicles"])
     df = _clean_columns(df)
     df = _drop_unnamed(df)
     df = _forward_fill_province(df)
@@ -153,7 +154,7 @@ def load_new_vehicles() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_new_private() -> pd.DataFrame:
     """Load new private (ملاكي) vehicle brands (File 3)."""
     df = pd.read_excel(FILES["new_private"])
@@ -167,7 +168,7 @@ def load_new_private() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_license_condition_gov() -> pd.DataFrame:
     """Load brands by license type, condition & governorate (File 4)."""
     df = pd.read_excel(FILES["license_condition_gov"])
@@ -184,7 +185,7 @@ def load_license_condition_gov() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_vehicle_condition() -> pd.DataFrame:
     """Load brands by vehicle condition (File 5)."""
     df = pd.read_excel(FILES["vehicle_condition"])
@@ -203,7 +204,7 @@ def load_vehicle_condition() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_shape_engine() -> pd.DataFrame:
     """Load private zero by shape & engine capacity (File 6)."""
     df = pd.read_excel(FILES["shape_engine"])
@@ -218,7 +219,7 @@ def load_shape_engine() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_private_by_gov() -> pd.DataFrame:
     """Load private zero brands by governorate (File 7)."""
     df = pd.read_excel(FILES["private_by_gov"])
@@ -232,7 +233,7 @@ def load_private_by_gov() -> pd.DataFrame:
     return df.reset_index(drop=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner=False)
 def load_used_vehicles() -> pd.DataFrame:
     """Load used vehicle brands & models (File 9)."""
     df = pd.read_excel(FILES["used_vehicles"])
@@ -254,76 +255,93 @@ def load_used_vehicles() -> pd.DataFrame:
 
 # ── Aggregate Summary ──────────────────────────────────────────────────────
 
-@st.cache_data(ttl=3600)
-def load_all_summary() -> dict:
-    """Load aggregated KPIs from all datasets."""
+def load_all_summary(scope: str = "All Datasets") -> dict:
+    """Load aggregated KPIs from all datasets, filtered by the given scope."""
     ev = load_ev_by_license()
     new = load_new_vehicles()
     used = load_used_vehicles()
     ev_jan = load_ev_january()
 
-    total_ev = int(ev["Grand Total"].sum()) if "Grand Total" in ev.columns else 0
-    total_new = int(new["Grand Total"].sum()) if "Grand Total" in new.columns else 0
-    total_used = int(used["Grand Total"].sum()) if "Grand Total" in used.columns else 0
+    # Determine which datasets are active based on scope
+    active_dfs = []
+    total_ev = total_new = total_used = 0
 
-    # Unique brands across all datasets
+    if scope == "EVs Only":
+        active_dfs = [ev]
+        total_ev = int(ev["Grand Total"].sum()) if "Grand Total" in ev.columns else 0
+    elif scope == "New Vehicles Only":
+        active_dfs = [new]
+        total_new = int(new["Grand Total"].sum()) if "Grand Total" in new.columns else 0
+    elif scope == "Used Vehicles Only":
+        active_dfs = [used]
+        total_used = int(used["Grand Total"].sum()) if "Grand Total" in used.columns else 0
+    else:  # All Datasets
+        active_dfs = [ev, new, used]
+        total_ev = int(ev["Grand Total"].sum()) if "Grand Total" in ev.columns else 0
+        total_new = int(new["Grand Total"].sum()) if "Grand Total" in new.columns else 0
+        total_used = int(used["Grand Total"].sum()) if "Grand Total" in used.columns else 0
+
+    total_all = total_ev + total_new + total_used
+
+    # Combine active dataframes for chart aggregations
+    chart_df = pd.concat(active_dfs, ignore_index=True) if active_dfs else pd.DataFrame()
+
+    # Unique brands and countries across active datasets
     all_brands = set()
-    for df in [ev, new, used]:
+    all_countries = set()
+    for df in active_dfs:
         if "Brand" in df.columns:
             all_brands.update(df["Brand"].dropna().unique())
-
-    # Unique countries
-    all_countries = set()
-    for df in [ev, new, used]:
         if "Country" in df.columns:
             all_countries.update(df["Country"].dropna().unique())
 
-    # Top brands from new vehicles
+    # Top brands from combined active data
     top_brands = pd.DataFrame()
-    if "Brand" in new.columns and "Grand Total" in new.columns:
+    if not chart_df.empty and "Brand" in chart_df.columns and "Grand Total" in chart_df.columns:
         top_brands = (
-            new.groupby("Brand")["Grand Total"]
+            chart_df.groupby("Brand")["Grand Total"]
             .sum()
             .sort_values(ascending=False)
             .head(10)
             .reset_index()
         )
 
-    # Fuel type distribution from new vehicles
+    # Fuel type distribution from combined active data
     fuel_dist = pd.DataFrame()
-    if "Fuel_Type" in new.columns and "Grand Total" in new.columns:
+    if not chart_df.empty and "Fuel_Type" in chart_df.columns and "Grand Total" in chart_df.columns:
         fuel_dist = (
-            new.groupby("Fuel_Type")["Grand Total"]
+            chart_df.groupby("Fuel_Type")["Grand Total"]
             .sum()
             .sort_values(ascending=False)
             .reset_index()
         )
 
-    # Country distribution
+    # Country distribution from combined active data
     country_dist = pd.DataFrame()
-    if "Country" in new.columns and "Grand Total" in new.columns:
+    if not chart_df.empty and "Country" in chart_df.columns and "Grand Total" in chart_df.columns:
         country_dist = (
-            new.groupby("Country")["Grand Total"]
+            chart_df.groupby("Country")["Grand Total"]
             .sum()
             .sort_values(ascending=False)
             .head(15)
             .reset_index()
         )
 
-    # Year trend from used vehicles
+    # Year trend — only when used data is in scope
     year_trend = pd.DataFrame()
-    year_cols = [c for c in used.columns if c in YEAR_COLUMNS]
-    if year_cols:
-        year_sums = {yr: used[yr].sum() for yr in year_cols}
-        year_trend = pd.DataFrame(
-            list(year_sums.items()), columns=["Year", "Registrations"]
-        )
+    if scope in ("All Datasets", "Used Vehicles Only"):
+        year_cols = [c for c in used.columns if c in YEAR_COLUMNS]
+        if year_cols:
+            year_sums = {yr: used[yr].sum() for yr in year_cols}
+            year_trend = pd.DataFrame(
+                list(year_sums.items()), columns=["Year", "Registrations"]
+            )
 
     return {
         "total_ev": total_ev,
         "total_new": total_new,
         "total_used": total_used,
-        "total_all": total_ev + total_new + total_used,
+        "total_all": total_all,
         "total_brands": len(all_brands),
         "total_countries": len(all_countries),
         "ev_jan_total": int(ev_jan["Grand Total"].sum()) if "Grand Total" in ev_jan.columns else 0,

@@ -54,6 +54,12 @@ with st.expander(":material/search: Search & Filters", expanded=False):
         fuel_opts = sorted(df['Fuel_Type'].dropna().unique().tolist()) if not df.empty else []
         sel_fuel = st.multiselect('Fuel Type', fuel_opts)
 
+    # Second row: Model filter
+    fcol6, _ = st.columns([1, 4])
+    with fcol6:
+        model_opts = sorted(df['Model'].dropna().unique().tolist()) if not df.empty else []
+        sel_model = st.multiselect('Model', model_opts)
+
 # Guard against empty data
 if raw_df is None or raw_df.empty:
     st.warning('⚠️ No data available for the selected view.')
@@ -69,6 +75,8 @@ if sel_country:
     df = df[df['Country'].isin(sel_country)]
 if sel_fuel:
     df = df[df['Fuel_Type'].isin(sel_fuel)]
+if sel_model:
+    df = df[df['Model'].isin(sel_model)]
 
 # ────────────────────────────────────────────
 # Empty-state guard after filtering
@@ -124,6 +132,20 @@ brand_df = (
     .head(15)
 )
 horizontal_bar(brand_df, x='Grand Total', y='Brand', title='Top 15 Brands by Registrations', n=15)
+
+gold_divider()
+
+# ────────────────────────────────────────────
+# Section: Top 15 Models
+# ────────────────────────────────────────────
+section_header(':material/model_training: Top 15 Models')
+model_df = (
+    df.groupby('Model', as_index=False)['Grand Total']
+    .sum()
+    .sort_values('Grand Total', ascending=False)
+    .head(15)
+)
+horizontal_bar(model_df, x='Grand Total', y='Model', title='Top 15 Models by Registrations', n=15)
 
 gold_divider()
 
