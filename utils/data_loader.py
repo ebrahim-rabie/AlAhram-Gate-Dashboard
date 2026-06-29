@@ -255,6 +255,7 @@ def load_used_vehicles() -> pd.DataFrame:
 
 # ── Aggregate Summary ──────────────────────────────────────────────────────
 
+@st.cache_data(ttl=3600, show_spinner="Computing global summary...")
 def load_all_summary(scope: str = "All Datasets") -> dict:
     """Load aggregated KPIs from all datasets, filtered by the given scope."""
     ev = load_ev_by_license()

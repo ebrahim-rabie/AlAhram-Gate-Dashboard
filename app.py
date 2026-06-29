@@ -10,6 +10,9 @@ from utils.charts import (
     donut_chart, horizontal_bar, line_chart, treemap_chart, data_table
 )
 
+# Force clear cache to ensure old data isn't shown
+st.cache_data.clear()
+
 # ── Theme & Top Header ─────────────────────────────────────────────────────────
 inject_custom_css()
 render_top_header()
@@ -66,7 +69,7 @@ elif scope == "EVs Only":
 
 else:
     highlight_val = summary.get("total_all", 0)
-    highlight_label, highlight_icon = "Total Vehicles", "car"
+    highlight_label, highlight_icon = "Total Private & EV", "car"
     
     # Default global summary
     fuel_dist = summary.get("fuel_dist")
@@ -86,6 +89,11 @@ with k4:
     kpi_card(title="Electric Vehicles", value=f"{summary.get('total_ev', 0):,}", icon="electric")
 with k5:
     kpi_card(title="Brands", value=f"{summary.get('total_brands', 0):,}", icon="brand")
+
+if scope == "All Datasets":
+    st.markdown("<div style='text-align: center; color: #8b949e; font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;'>💡 <b>Note:</b> This dashboard focuses exclusively on the <b>Private</b> and <b>Electric Vehicle</b> sectors. For the comprehensive market analysis across all license types (434k+ vehicles), please visit the <i>Market Distribution</i> page.</div>", unsafe_allow_html=True)
+else:
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
 # ── Row 1: Fuel Distribution  |  Top Brands ────────────────────────────────
 col_left, col_right = st.columns(2)

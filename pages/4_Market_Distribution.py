@@ -138,6 +138,8 @@ with k3:
 with k4:
     kpi_card(specific_label, f"{specific_count:,}", specific_icon)
 
+st.markdown("<div style='text-align: center; color: #8b949e; font-size: 0.9rem; margin-top: -10px; margin-bottom: 20px;'>💡 <b>Note:</b> This page displays the comprehensive master dataset representing the entire Egyptian vehicle market across all available license types and conditions.</div>", unsafe_allow_html=True)
+
 st.markdown("")
 
 # ──────────────────────────────────────────────
